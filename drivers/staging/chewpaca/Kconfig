@@ -1,0 +1,6 @@
+config CHEWPACA
+	bool ""
+	default y
+	help
+	  Kernel module to validate the new_get_paca() using the indirect access
+	  to register(r13).

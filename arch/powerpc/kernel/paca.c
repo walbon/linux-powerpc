@@ -24,6 +24,19 @@
 #define boot_cpuid 0
 #endif
 
+struct paca_struct *new_get_paca(void) {
+        struct paca_struct *ptr;
+
+        preempt_disable();
+
+        __asm__ __volatile__(
+        "mfspr %0,13"
+        : "=r" (ptr) );
+
+        preempt_enable();
+
+        return ptr;
+}
 static void *__init alloc_paca_data(unsigned long size, unsigned long align,
 				unsigned long limit, int cpu)
 {
