@@ -37,17 +37,7 @@
 register struct paca_struct *local_paca asm("r13");
 
 
-struct paca_struct *new_get_paca() {
-	struct paca_struct *ptr;
-
-	__asm__ __volatile__(
-	"mfspr %var,r13 \n\t"
-	: "var=r" (ptr)
-	:
-	);
-
-	return ptr
-}
+struct paca_struct *new_get_paca();
 
 #if defined(CONFIG_DEBUG_PREEMPT) && defined(CONFIG_SMP)
 extern unsigned int debug_smp_processor_id(void); /* from linux/smp.h */
