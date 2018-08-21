@@ -36,6 +36,7 @@
 
 register struct paca_struct *local_paca asm("r13");
 
+
 #if defined(CONFIG_DEBUG_PREEMPT) && defined(CONFIG_SMP)
 extern unsigned int debug_smp_processor_id(void); /* from linux/smp.h */
 /*
