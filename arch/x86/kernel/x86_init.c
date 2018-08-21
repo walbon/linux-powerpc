@@ -92,6 +92,7 @@ struct x86_init_ops x86_init __initdata = {
 		.guest_late_init	= x86_init_noop,
 		.x2apic_available	= bool_x86_init_noop,
 		.init_mem_mapping	= x86_init_noop,
+		.init_after_bootmem	= x86_init_noop,
 	},
 
 	.acpi = {
@@ -108,7 +109,7 @@ struct x86_cpuinit_ops x86_cpuinit = {
 static void default_nmi_init(void) { };
 
 struct x86_platform_ops x86_platform __ro_after_init = {
-	.calibrate_cpu			= native_calibrate_cpu,
+	.calibrate_cpu			= native_calibrate_cpu_early,
 	.calibrate_tsc			= native_calibrate_tsc,
 	.get_wallclock			= mach_get_cmos_time,
 	.set_wallclock			= mach_set_rtc_mmss,

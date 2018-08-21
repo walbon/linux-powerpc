@@ -29,29 +29,31 @@ struct idr {
 #define IDR_FREE	0
 
 /* Set the IDR flag and the IDR_FREE tag */
-#define IDR_RT_MARKER		((__force gfp_t)(3 << __GFP_BITS_SHIFT))
+#define IDR_RT_MARKER	(ROOT_IS_IDR | (__force gfp_t)			\
+					(1 << (ROOT_TAG_SHIFT + IDR_FREE)))
 
-#define IDR_INIT_BASE(base) {						\
-	.idr_rt = RADIX_TREE_INIT(IDR_RT_MARKER),			\
+#define IDR_INIT_BASE(name, base) {					\
+	.idr_rt = RADIX_TREE_INIT(name, IDR_RT_MARKER),			\
 	.idr_base = (base),						\
 	.idr_next = 0,							\
 }
 
 /**
  * IDR_INIT() - Initialise an IDR.
+ * @name: Name of IDR.
  *
  * A freshly-initialised IDR contains no IDs.
  */
-#define IDR_INIT	IDR_INIT_BASE(0)
+#define IDR_INIT(name)	IDR_INIT_BASE(name, 0)
 
 /**
- * DEFINE_IDR() - Define a statically-allocated IDR
- * @name: Name of IDR
+ * DEFINE_IDR() - Define a statically-allocated IDR.
+ * @name: Name of IDR.
  *
  * An IDR defined using this macro is ready for use with no additional
  * initialisation required.  It contains no IDs.
  */
-#define DEFINE_IDR(name)	struct idr name = IDR_INIT
+#define DEFINE_IDR(name)	struct idr name = IDR_INIT(name)
 
 /**
  * idr_get_cursor - Return the current position of the cyclic allocator
@@ -95,6 +97,17 @@ static inline void idr_set_cursor(struct idr *idr, unsigned int val)
  * having been deleted from the idr tree *and* a synchronize_rcu() grace
  * period).
  */
+
+#define idr_lock(idr)		xa_lock(&(idr)->idr_rt)
+#define idr_unlock(idr)		xa_unlock(&(idr)->idr_rt)
+#define idr_lock_bh(idr)	xa_lock_bh(&(idr)->idr_rt)
+#define idr_unlock_bh(idr)	xa_unlock_bh(&(idr)->idr_rt)
+#define idr_lock_irq(idr)	xa_lock_irq(&(idr)->idr_rt)
+#define idr_unlock_irq(idr)	xa_unlock_irq(&(idr)->idr_rt)
+#define idr_lock_irqsave(idr, flags) \
+				xa_lock_irqsave(&(idr)->idr_rt, flags)
+#define idr_unlock_irqrestore(idr, flags) \
+				xa_unlock_irqrestore(&(idr)->idr_rt, flags)
 
 void idr_preload(gfp_t gfp_mask);
 
@@ -218,10 +231,10 @@ struct ida {
 	struct radix_tree_root	ida_rt;
 };
 
-#define IDA_INIT	{						\
-	.ida_rt = RADIX_TREE_INIT(IDR_RT_MARKER | GFP_NOWAIT),		\
+#define IDA_INIT(name)	{						\
+	.ida_rt = RADIX_TREE_INIT(name, IDR_RT_MARKER | GFP_NOWAIT),	\
 }
-#define DEFINE_IDA(name)	struct ida name = IDA_INIT
+#define DEFINE_IDA(name)	struct ida name = IDA_INIT(name)
 
 int ida_pre_get(struct ida *ida, gfp_t gfp_mask);
 int ida_get_new_above(struct ida *ida, int starting_id, int *p_id);

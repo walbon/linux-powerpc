@@ -1,19 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) 2011 STRATO.  All rights reserved.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public
- * License v2 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public
- * License along with this program; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 021110-1307, USA.
  */
 
 #include <linux/mm.h>
@@ -938,7 +925,7 @@ static int add_inline_refs(const struct btrfs_fs_info *fs_info,
 		type = btrfs_get_extent_inline_ref_type(leaf, iref,
 							BTRFS_REF_TYPE_ANY);
 		if (type == BTRFS_REF_TYPE_INVALID)
-			return -EINVAL;
+			return -EUCLEAN;
 
 		offset = btrfs_extent_inline_ref_offset(leaf, iref);
 
@@ -1806,7 +1793,7 @@ static int get_extent_inline_ref(unsigned long *ptr,
 	*out_type = btrfs_get_extent_inline_ref_type(eb, *out_eiref,
 						     BTRFS_REF_TYPE_ANY);
 	if (*out_type == BTRFS_REF_TYPE_INVALID)
-		return -EINVAL;
+		return -EUCLEAN;
 
 	*ptr += btrfs_extent_inline_ref_size(*out_type);
 	WARN_ON(*ptr > end);
@@ -2238,7 +2225,7 @@ struct inode_fs_paths *init_ipath(s32 total_bytes, struct btrfs_root *fs_root,
 
 	fspath = init_data_container(total_bytes);
 	if (IS_ERR(fspath))
-		return (void *)fspath;
+		return ERR_CAST(fspath);
 
 	ifp = kmalloc(sizeof(*ifp), GFP_KERNEL);
 	if (!ifp) {
