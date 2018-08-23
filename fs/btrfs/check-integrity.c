@@ -1,19 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) STRATO AG 2011.  All rights reserved.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public
- * License v2 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public
- * License along with this program; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 021110-1307, USA.
  */
 
 /*
@@ -1552,7 +1539,12 @@ static int btrfsic_map_block(struct btrfsic_state *state, u64 bytenr, u32 len,
 	}
 
 	device = multi->stripes[0].dev;
-	block_ctx_out->dev = btrfsic_dev_state_lookup(device->bdev->bd_dev);
+	if (test_bit(BTRFS_DEV_STATE_MISSING, &device->dev_state) ||
+	    !device->bdev || !device->name)
+		block_ctx_out->dev = NULL;
+	else
+		block_ctx_out->dev = btrfsic_dev_state_lookup(
+							device->bdev->bd_dev);
 	block_ctx_out->dev_bytenr = multi->stripes[0].physical;
 	block_ctx_out->start = bytenr;
 	block_ctx_out->len = len;
@@ -1616,8 +1608,8 @@ static int btrfsic_read_block(struct btrfsic_state *state,
 
 	num_pages = (block_ctx->len + (u64)PAGE_SIZE - 1) >>
 		    PAGE_SHIFT;
-	block_ctx->mem_to_free = kzalloc((sizeof(*block_ctx->datav) +
-					  sizeof(*block_ctx->pagev)) *
+	block_ctx->mem_to_free = kcalloc(sizeof(*block_ctx->datav) +
+						sizeof(*block_ctx->pagev),
 					 num_pages, GFP_NOFS);
 	if (!block_ctx->mem_to_free)
 		return -ENOMEM;
@@ -1637,7 +1629,7 @@ static int btrfsic_read_block(struct btrfsic_state *state,
 		bio = btrfs_io_bio_alloc(num_pages - i);
 		bio_set_dev(bio, block_ctx->dev->bdev);
 		bio->bi_iter.bi_sector = dev_bytenr >> 9;
-		bio_set_op_attrs(bio, REQ_OP_READ, 0);
+		bio->bi_opf = REQ_OP_READ;
 
 		for (j = i; j < num_pages; j++) {
 			ret = bio_add_page(bio, block_ctx->pagev[j],

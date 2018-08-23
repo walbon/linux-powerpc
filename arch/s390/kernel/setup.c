@@ -674,12 +674,12 @@ static void __init reserve_kernel(void)
 #ifdef CONFIG_DMA_API_DEBUG
 	/*
 	 * DMA_API_DEBUG code stumbles over addresses from the
-	 * range [_ehead, _stext]. Mark the memory as reserved
+	 * range [PARMAREA_END, _stext]. Mark the memory as reserved
 	 * so it is not used for CONFIG_DMA_API_DEBUG=y.
 	 */
 	memblock_reserve(0, PFN_PHYS(start_pfn));
 #else
-	memblock_reserve(0, (unsigned long)_ehead);
+	memblock_reserve(0, PARMAREA_END);
 	memblock_reserve((unsigned long)_stext, PFN_PHYS(start_pfn)
 			 - (unsigned long)_stext);
 #endif
@@ -821,6 +821,7 @@ static int __init setup_hwcaps(void)
 		strcpy(elf_platform, "z13");
 		break;
 	case 0x3906:
+	case 0x3907:
 		strcpy(elf_platform, "z14");
 		break;
 	}
@@ -893,6 +894,9 @@ void __init setup_arch(char **cmdline_p)
 	init_mm.end_code = (unsigned long) _etext;
 	init_mm.end_data = (unsigned long) _edata;
 	init_mm.brk = (unsigned long) _end;
+
+	if (IS_ENABLED(CONFIG_EXPOLINE_AUTO))
+		nospec_auto_detect();
 
 	parse_early_param();
 #ifdef CONFIG_CRASH_DUMP
