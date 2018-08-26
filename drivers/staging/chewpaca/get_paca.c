@@ -7,17 +7,16 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Walbon");
 MODULE_DESCRIPTION("A simple kernel module to validate new_get_paca()");
 
-void new_get_paca(struct paca_struct *ptr) {
+void new_get_paca(struct paca_struct **ptr) {
 
         preempt_disable();
 
         __asm__ __volatile__(
         "mr %0,13"
-        :"=r" (ptr)
+        :"=r" (*ptr)
 	);
 
         preempt_enable();
-
 }
 
 static int __init get_paca_init(void)
@@ -28,11 +27,11 @@ static int __init get_paca_init(void)
         printk(KERN_INFO "Hello world!\n");
 
         printk(KERN_WARNING "Paca register: %p\n", local_paca);
-	printk(KERN_WARNING "Paca content hw_cpu_id: %d\n",local_paca->hw_cpu_id);
+	printk(KERN_WARNING "+->Paca content hw_cpu_id: %d\n",local_paca->hw_cpu_id);
 
-        new_get_paca(pptr);
+        new_get_paca(&pptr);
         printk(KERN_WARNING "Address pptr %p\n", pptr);
-	printk(KERN_WARNING "pptr content hw_cpu_id: %d\n",pptr->hw_cpu_id);
+	printk(KERN_WARNING "+->pptr content hw_cpu_id: %d\n",pptr->hw_cpu_id);
 
         return 0;    // Non-zero return means that the module couldn't be
 }
