@@ -24,13 +24,13 @@
 #define boot_cpuid 0
 #endif
 
-struct paca_struct* new_get_paca(void) {
+struct paca_struct* __init new_get_paca(void) {
         struct paca_struct *ptr;
 
         preempt_disable();
 
         __asm__ __volatile__(
-        "mfspr %0,13"
+        "mr %0,13"
         : "=r" (ptr) );
 
         preempt_enable();
@@ -39,6 +39,7 @@ struct paca_struct* new_get_paca(void) {
 		printk(KERN_WARNING "+->Paca content hw_cpu_id: %d\n",(ptr)->hw_cpu_id);
         return ptr;
 }
+
 static void *__init alloc_paca_data(unsigned long size, unsigned long align,
 				unsigned long limit, int cpu)
 {
