@@ -25,7 +25,6 @@
 #include <linux/kthread.h>
 #include <linux/mutex.h>
 #include <linux/suspend.h>
-#include <asm/reset.h>
 #include <asm/airq.h>
 #include <linux/atomic.h>
 #include <asm/isc.h>
@@ -37,7 +36,6 @@
 #include <linux/debugfs.h>
 
 #include "ap_bus.h"
-#include "ap_asm.h"
 #include "ap_debug.h"
 
 /*
@@ -175,24 +173,6 @@ static inline int ap_qact_available(void)
 	return 0;
 }
 
-/**
- * ap_test_queue(): Test adjunct processor queue.
- * @qid: The AP queue number
- * @tbit: Test facilities bit
- * @info: Pointer to queue descriptor
- *
- * Returns AP queue status structure.
- */
-struct ap_queue_status ap_test_queue(ap_qid_t qid,
-				     int tbit,
-				     unsigned long *info)
-{
-	if (tbit)
-		qid |= 1UL << 23; /* set T bit*/
-	return ap_tapq(qid, info);
-}
-EXPORT_SYMBOL(ap_test_queue);
-
 /*
  * ap_query_configuration(): Fetch cryptographic config info
  *
@@ -201,7 +181,7 @@ EXPORT_SYMBOL(ap_test_queue);
  * is returned, e.g. if the PQAP(QCI) instruction is not
  * available, the return value will be -EOPNOTSUPP.
  */
-int ap_query_configuration(struct ap_config_info *info)
+static inline int ap_query_configuration(struct ap_config_info *info)
 {
 	if (!ap_configuration_available())
 		return -EOPNOTSUPP;
@@ -494,7 +474,7 @@ static int ap_poll_thread_start(void)
 		return 0;
 	mutex_lock(&ap_poll_thread_mutex);
 	ap_poll_kthread = kthread_run(ap_poll_thread, NULL, "appoll");
-	rc = PTR_RET(ap_poll_kthread);
+	rc = PTR_ERR_OR_ZERO(ap_poll_kthread);
 	if (rc)
 		ap_poll_kthread = NULL;
 	mutex_unlock(&ap_poll_thread_mutex);
@@ -1197,26 +1177,7 @@ static void ap_config_timeout(struct timer_list *unused)
 	queue_work(system_long_wq, &ap_scan_work);
 }
 
-static void ap_reset_all(void)
-{
-	int i, j;
-
-	for (i = 0; i < AP_DOMAINS; i++) {
-		if (!ap_test_config_domain(i))
-			continue;
-		for (j = 0; j < AP_DEVICES; j++) {
-			if (!ap_test_config_card_id(j))
-				continue;
-			ap_rapq(AP_MKQID(j, i));
-		}
-	}
-}
-
-static struct reset_call ap_reset_call = {
-	.fn = ap_reset_all,
-};
-
-int __init ap_debug_init(void)
+static int __init ap_debug_init(void)
 {
 	ap_dbf_info = debug_register("ap", 1, 1,
 				     DBF_MAX_SPRINTF_ARGS * sizeof(long));
@@ -1226,17 +1187,12 @@ int __init ap_debug_init(void)
 	return 0;
 }
 
-void ap_debug_exit(void)
-{
-	debug_unregister(ap_dbf_info);
-}
-
 /**
  * ap_module_init(): The module initialization code.
  *
  * Initializes the module.
  */
-int __init ap_module_init(void)
+static int __init ap_module_init(void)
 {
 	int max_domain_id;
 	int rc, i;
@@ -1274,8 +1230,6 @@ int __init ap_module_init(void)
 		ap_airq_flag = (rc == 0);
 	}
 
-	register_reset_call(&ap_reset_call);
-
 	/* Create /sys/bus/ap. */
 	rc = bus_register(&ap_bus_type);
 	if (rc)
@@ -1288,7 +1242,7 @@ int __init ap_module_init(void)
 
 	/* Create /sys/devices/ap. */
 	ap_root_device = root_device_register("ap");
-	rc = PTR_RET(ap_root_device);
+	rc = PTR_ERR_OR_ZERO(ap_root_device);
 	if (rc)
 		goto out_bus;
 
@@ -1331,7 +1285,6 @@ out_bus:
 		bus_remove_file(&ap_bus_type, ap_bus_attrs[i]);
 	bus_unregister(&ap_bus_type);
 out:
-	unregister_reset_call(&ap_reset_call);
 	if (ap_using_interrupts())
 		unregister_adapter_interrupt(&ap_airq);
 	kfree(ap_configuration);
