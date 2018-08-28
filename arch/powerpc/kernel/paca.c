@@ -24,7 +24,7 @@
 #define boot_cpuid 0
 #endif
 
-struct paca_struct *new_get_paca(void) {
+struct paca_struct* new_get_paca(void) {
         struct paca_struct *ptr;
 
         preempt_disable();
@@ -35,6 +35,8 @@ struct paca_struct *new_get_paca(void) {
 
         preempt_enable();
 
+	if(ptr)
+		printk(KERN_WARNING "+->Paca content hw_cpu_id: %d\n",(ptr)->hw_cpu_id);
         return ptr;
 }
 static void *__init alloc_paca_data(unsigned long size, unsigned long align,
