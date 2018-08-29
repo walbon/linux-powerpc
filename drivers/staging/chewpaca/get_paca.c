@@ -7,7 +7,7 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Walbon");
 MODULE_DESCRIPTION("A simple kernel module to validate new_get_paca()");
 
-void new_get_paca(struct paca_struct **ptr) {
+void chewpaca(struct paca_struct **ptr) {
 
         preempt_disable();
 
@@ -29,7 +29,7 @@ static int __init get_paca_init(void)
         printk(KERN_WARNING "Paca register: %p\n", local_paca);
 	printk(KERN_WARNING "+->Paca content hw_cpu_id: %d\n",local_paca->hw_cpu_id);
 
-        new_get_paca(&pptr);
+        chewpaca(&pptr);
         printk(KERN_WARNING "Address pptr %p\n", pptr);
 	printk(KERN_WARNING "+->pptr content hw_cpu_id: %d\n",pptr->hw_cpu_id);
 
