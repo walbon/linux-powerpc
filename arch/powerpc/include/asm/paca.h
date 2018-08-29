@@ -36,13 +36,15 @@
 
 register struct paca_struct *local_paca asm("r13");
 
+extern struct paca_struct *new_get_paca(void);
+
 #if defined(CONFIG_DEBUG_PREEMPT) && defined(CONFIG_SMP)
 extern unsigned int debug_smp_processor_id(void); /* from linux/smp.h */
 /*
  * Add standard checks that preemption cannot occur when using get_paca():
  * otherwise the paca_struct it points to may be the wrong one just after.
  */
-#define get_paca()	((void) debug_smp_processor_id(), local_paca)
+#define get_paca()	new_get_paca()
 #else
 #define get_paca()	local_paca
 #endif
@@ -161,11 +163,10 @@ struct paca_struct {
 	struct task_struct *__current;	/* Pointer to current */
 	u64 kstack;			/* Saved Kernel stack addr */
 	u64 stab_rr;			/* stab/slb round-robin counter */
-	u64 saved_r1;			/* r1 save for RTAS calls or PM */
+	u64 saved_r1;			/* r1 save for RTAS calls or PM or EE=0 */
 	u64 saved_msr;			/* MSR saved here by enter_rtas */
 	u16 trap_save;			/* Used when bad stack is encountered */
 	u8 irq_soft_mask;		/* mask for irq soft masking */
-	u8 soft_enabled;		/* irq soft-enable flag */
 	u8 irq_happened;		/* irq happened while soft-disabled */
 	u8 io_sync;			/* writel() needs spin_unlock sync */
 	u8 irq_work_pending;		/* IRQ_WORK interrupt while soft-disable */
@@ -188,11 +189,6 @@ struct paca_struct {
 	u8 subcore_sibling_mask;
 	/* Flag to request this thread not to stop */
 	atomic_t dont_stop;
-	/*
-	 * Pointer to an array which contains pointer
-	 * to the sibling threads' paca.
-	 */
-	struct paca_struct **thread_sibling_pacas;
 	/* The PSSCR value that the kernel requested before going to stop */
 	u64 requested_psscr;
 
@@ -223,6 +219,7 @@ struct paca_struct {
 	u8 hmi_event_available;		/* HMI event is available */
 	u8 hmi_p9_special_emu;		/* HMI P9 special emulation */
 #endif
+	u8 ftrace_enabled;		/* Hard disable ftrace */
 
 	/* Stuff for accurate time accounting */
 	struct cpu_accounting_data accounting;
@@ -252,6 +249,9 @@ struct paca_struct {
 	void *rfi_flush_fallback_area;
 	u64 l1d_flush_size;
 #endif
+#ifdef CONFIG_PPC_PSERIES
+	u8 *mce_data_buf;		/* buffer to hold per cpu rtas errlog */
+#endif /* CONFIG_PPC_PSERIES */
 } ____cacheline_aligned;
 
 extern void copy_mm_to_paca(struct mm_struct *mm);

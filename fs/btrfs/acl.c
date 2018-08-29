@@ -1,19 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) 2007 Red Hat.  All rights reserved.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public
- * License v2 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public
- * License along with this program; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 021110-1307, USA.
  */
 
 #include <linux/fs.h>
@@ -43,23 +30,22 @@ struct posix_acl *btrfs_get_acl(struct inode *inode, int type)
 		name = XATTR_NAME_POSIX_ACL_DEFAULT;
 		break;
 	default:
-		BUG();
+		return ERR_PTR(-EINVAL);
 	}
 
-	size = btrfs_getxattr(inode, name, "", 0);
+	size = btrfs_getxattr(inode, name, NULL, 0);
 	if (size > 0) {
 		value = kzalloc(size, GFP_KERNEL);
 		if (!value)
 			return ERR_PTR(-ENOMEM);
 		size = btrfs_getxattr(inode, name, value, size);
 	}
-	if (size > 0) {
+	if (size > 0)
 		acl = posix_acl_from_xattr(&init_user_ns, value, size);
-	} else if (size == -ERANGE || size == -ENODATA || size == 0) {
+	else if (size == -ENODATA || size == 0)
 		acl = NULL;
-	} else {
-		acl = ERR_PTR(-EIO);
-	}
+	else
+		acl = ERR_PTR(size);
 	kfree(value);
 
 	return acl;
