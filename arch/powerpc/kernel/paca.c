@@ -24,8 +24,9 @@
 #define boot_cpuid 0
 #endif
 
-struct paca_struct* __init new_get_paca(void) {
-        struct paca_struct *ptr;
+struct paca_struct* __init get_paca(void) {
+
+	struct paca_struct *ptr = NULL;
 
         preempt_disable();
 

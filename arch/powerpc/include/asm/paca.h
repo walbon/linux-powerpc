@@ -36,7 +36,6 @@
 
 register struct paca_struct *local_paca asm("r13");
 
-extern struct paca_struct *new_get_paca(void);
 
 #if defined(CONFIG_DEBUG_PREEMPT) && defined(CONFIG_SMP)
 extern unsigned int debug_smp_processor_id(void); /* from linux/smp.h */
@@ -44,7 +43,7 @@ extern unsigned int debug_smp_processor_id(void); /* from linux/smp.h */
  * Add standard checks that preemption cannot occur when using get_paca():
  * otherwise the paca_struct it points to may be the wrong one just after.
  */
-#define get_paca()	new_get_paca()
+extern struct paca_struct *get_paca(void);
 #else
 #define get_paca()	local_paca
 #endif
