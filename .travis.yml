@@ -1,0 +1,11 @@
+sudo: required
+language: c
+os:
+        - linux-ppc64le
+        - linux-arm64
+        - linux-arm
+        - linux
+script:
+  - lscpu
+  - free -h
+
