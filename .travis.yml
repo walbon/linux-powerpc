@@ -1,0 +1,17 @@
+sudo: required
+language: c
+os:
+        - linux-ppc64le
+        - linux-arm64
+        - linux-arm
+        - linux
+
+compiler:
+  - gcc
+  - clang
+
+install: skip
+
+script:
+  - make olddefconfig
+  - make all
