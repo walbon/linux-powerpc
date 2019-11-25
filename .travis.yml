@@ -1,5 +1,6 @@
 sudo: required
 language: c
+cache: ccache
 os:
         - linux-ppc64le
         - linux-arm64
@@ -14,4 +15,4 @@ install: skip
 
 script:
   - make olddefconfig
-  - make all
+  - make CC="ccache gcc" all -j$(nproc)
