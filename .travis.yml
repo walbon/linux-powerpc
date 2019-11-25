@@ -3,16 +3,14 @@ language: c
 cache: ccache
 os:
         - linux-ppc64le
-        - linux-arm64
-        - linux-arm
         - linux
 
 compiler:
   - gcc
   - clang
 
-install: skip
-
 script:
+  - uname -a
+  - lscpu
   - make olddefconfig
-  - make CC="ccache gcc" all -j$(nproc)
+  - make CC="ccache gcc" all -j$(nproc) -e QUIET=1 2> errors || cat errors
